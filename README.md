@@ -1,103 +1,88 @@
-# GravitySwitcher (Phase 1 Foundation)
+# GravitySwitcher (Phase 1)
 
-A 2D puzzle-platformer where the player flips gravity to walk on the floor or the ceiling. See [`SPEC.md`](SPEC.md) for the full design and acceptance criteria.
+A 2D puzzle-platformer where you flip gravity to walk on the floor or the ceiling. The design is in [`SPEC.md`](SPEC.md).
 
-This is a **Phase 1 foundation**, not the finished game. It has the game screen, player movement, gravity switching, floor/ceiling collision, and a level data format that is ready to extend. Keys, exits, spikes, more levels and the victory screen are left for Phase 2.
+Phase 1 is a foundation, not a finished game. You can move, flip gravity, and get past one wall, but there is no key, exit or way to win yet.
 
-## How to run
+## Run it
 
-There are no dependencies and no build step.
+No dependencies or build step. Open `index.html` in a browser, or run a local server:
 
-- **Easiest:** open `index.html` in a web browser (double-click it).
-- **Or use a local server** (useful if your browser restricts local files):
-  ```bash
-  python3 -m http.server 8000
-  # then visit http://localhost:8000
-  ```
-
-## Controls
+```bash
+python3 -m http.server 8000   # then visit http://localhost:8000
+```
 
 | Key | Action |
 | --- | --- |
-| Left / Right arrow | Move left / right |
-| Space | Switch gravity (floor ↔ ceiling) |
+| ← / → | Move |
+| Space | Flip gravity (works mid-air; holding it flips only once) |
 
-## What works
+## SPEC.md acceptance criteria
 
-- A canvas game screen (800×450) with a visible player (yellow block).
-- Left/right movement with the arrow keys. Holding both cancels out.
-- Gravity switching with Space. You can flip at any time, even mid-air (SPEC.md: "reverse gravity at any moment"). Holding Space flips only once; you must press it again to flip back.
-- Collision with the floor and ceiling. The player lands on whichever one gravity pulls toward and can walk along it.
-- The player cannot leave the screen on the left or right.
-- The player's eye shows which way gravity points (it is on the side away from the surface being stood on) and which way the player is facing.
-- Levels are plain data objects in `js/levels.js`, loaded with `loadLevel(index)`.
-
-## Not done yet (Phase 2 and later)
-
-Search the code for `TODO` to find where each item belongs.
-
-| Feature | SPEC.md item | Where to add it |
+| # | Criterion | Status |
 | --- | --- | --- |
-| Wall and platform side collision | #3 | `resolveHorizontalCollisions` stub in `js/physics.js` |
-| Collectible keys | #4 | Level format in `js/levels.js`, `updateGame` in `js/game.js`, drawing in `js/renderer.js` |
-| Locked/unlocked exit, level completion | #5, #6 | Same as above |
-| Spikes that reset the level | #7 | Same as above. Reset by calling `loadLevel(gameState.currentLevelIndex)` |
-| Multiple levels that progress automatically | #8 | Add objects to `LEVELS`; call `loadLevel(index + 1)` on exit |
-| R to restart | #9 | `js/input.js` (add the key) and `updateGame` |
-| On-screen level number / controls (HUD) | #10 | `renderFrame` in `js/renderer.js` (controls are currently shown below the canvas in HTML) |
-| Victory screen | #11 | `renderFrame` plus a `hasWon` flag in `gameState` |
-| Visual effect / sound on gravity switch | #12, #13 | `switchPlayerGravity` in `js/player.js` |
+| 1 | Arrow keys move the player | ✅ Met |
+| 2 | Space reverses gravity | ✅ Met |
+| 3 | Can't pass through floors, ceilings, walls | ✅ Met. Every solid blocks the player from all sides. Level 1 has one wall; no level has a platform yet |
+| 4 | Keys remove themselves and unlock the exit | ❌ Not met |
+| 5 | Locked exit doesn't complete the level | ❌ Not met |
+| 6 | One level can be finished start to end | ❌ Not met (no keys or exit) |
+| 7 | Spikes reset the player | ❌ Not met |
+| 8 | Several levels that progress automatically | ❌ Not met. Only level 0 exists and loads |
+| 9 | R restarts the level | ❌ Not met |
+| 10 | Level number and controls on screen | 🟡 Partial. Controls are shown in HTML below the canvas; no level number |
+| 11 | Win message after the final level | ❌ Not met |
+| 12 | Gravity switch has a visible effect | 🟡 Partial. The player's eye moves to the other side; there is no dedicated effect |
+| 13 | Sounds on flip and level complete | ❌ Not met |
 
-## File overview
+## Code map
 
-```
-index.html        Page layout, canvas, and the <script> tags (load order matters)
-css/style.css     Page styling only. All game visuals are drawn on the canvas
-js/config.js      Tunable constants: sizes, speeds, gravity strength, colors
-js/input.js       Keyboard state: held arrow keys, one-shot Space press
-js/levels.js      Level data (LEVELS array) and the level format description
-js/player.js      createPlayer() and switchPlayerGravity()
-js/physics.js     Movement, gravity, collision resolution, rectanglesOverlap()
-js/renderer.js    All drawing code. Reads state and never changes it
-js/game.js        Game state, loadLevel(), updateGame(), and the main loop (loaded last)
-```
+Scripts are plain `<script>` tags (no modules), so they load in the order listed in `index.html`, and `game.js` must be last.
 
-### How a frame works
+| File | What it does |
+| --- | --- |
+| `index.html` | Canvas, controls text, and the script tags |
+| `css/style.css` | Page styling only; the game is drawn on the canvas |
+| `js/config.js` | Constants: canvas and player size, speeds, gravity, colors |
+| `js/input.js` | Keyboard state. `getHorizontalInputDirection()` returns -1/0/1; `consumeGravitySwitchPress()` returns true once per Space press |
+| `js/levels.js` | The `LEVELS` array and the level format. `createFloorAndCeiling()` builds the two default solids |
+| `js/player.js` | `createPlayer()` builds the player object; `switchPlayerGravity()` flips it |
+| `js/physics.js` | `updatePlayerPhysics()` moves the player along x, then y. `resolveHorizontalCollisions()` / `resolveVerticalCollisions()` push it out of solids. `rectanglesOverlap()` is the shared hit test. `keepPlayerInsideScreen()` clamps to the screen edges |
+| `js/renderer.js` | `renderFrame()` draws the background, the solids and the player. It only reads state |
+| `js/game.js` | `gameState`, `loadLevel(index)` (also the restart function), `updateGame()` (one game step), and `gameLoop()` (runs every frame) |
 
-1. `gameLoop` (game.js) works out how much time has passed (`deltaSeconds`, capped at 1/30 s).
-2. `updateGame` checks for a Space press (input.js), then calls `updatePlayerPhysics` (physics.js).
-3. `updatePlayerPhysics` moves the player horizontally, then vertically, and pushes it out of any solid it overlaps.
-4. `renderFrame` (renderer.js) draws the level and the player.
+A level is `{ name, playerStart, startGravity, solids }`. To add a wall or platform, add a `{ x, y, width, height }` rectangle to `solids`; no other code needs to change. Level 1's wall is an example.
 
-### Adding a level
+## Next steps (in priority order)
 
-Add an object to the `LEVELS` array in `js/levels.js`:
+Search for `TODO` in the code; each one marks where a feature goes.
 
-```js
-{
-  name: "Level 2: Example",
-  playerStart: { x: 60, y: 300 },
-  startGravity: GRAVITY_DOWN,
-  solids: [
-    ...createFloorAndCeiling(),
-    { x: 300, y: 200, width: 120, height: 20 }, // a platform
-  ],
-}
-```
+1. **Keys, locked exit, level completion** (#4–6). These finish Priority 1. Add `keys` and `exit` to the level format; copy keys into `gameState` in `loadLevel` so a restart restores them; check touches with `rectanglesOverlap()` in `updateGame`; draw them in `renderFrame`. Put the exit beyond the wall in level 1.
+2. **R to restart and spikes** (#9, #7). Both just call `loadLevel(gameState.currentLevelIndex)`.
+3. **More levels, auto-progression, win screen** (#8, #11). Load `currentLevelIndex + 1` on exit; set a `hasWon` flag after the last level. Add at least one platform to test platform collision.
+4. **On-screen level number** (#10), drawn in `renderFrame`.
+5. **Flip effect and sounds** (#12–13), in `switchPlayerGravity`. The spec says to cut these first if time runs short.
 
-Phase 1 only loads level 0. Moving to the next level is a Phase 2 task.
+## Known issues and shortcuts
 
-## Known limitations
+- **Thin solids can be skipped.** The player falls up to 40 px per frame, so a solid thinner than that can be passed through. Make solids about 20 px thick or more, or lower `MAX_FALL_SPEED`.
+- **Corner snap.** If the player is falling past the edge of a solid's top and overlaps it by a few pixels sideways, it gets placed on top instead of falling past. This is common in simple platformers.
+- **Slow motion under 30 fps.** Each frame's time step is capped at 1/30 s to stop the player passing through solids. On a slow machine, the game runs slower instead of skipping frames.
+- **Canvas size is set in two places.** It is in `index.html` and in `CANVAS_WIDTH`/`CANVAS_HEIGHT` in `config.js`; change both together.
+- **Screen edges act as walls.** No scrolling, and levels can't be wider than 800 px.
+- **Unlimited mid-air flips.** This matches the spec's "at any moment". To limit it, require `player.isGrounded` before flipping. That flag is maintained but not used yet.
+- **Solids can't move.** Collision assumes still solids. A moving platform would need to push the player.
+- The level `name` isn't displayed anywhere yet.
+- Keyboard only. The canvas shrinks on small screens but never grows beyond 800×450.
 
-- **Only vertical collision exists.** Solids block the player from above and below, but the player can walk *through* the sides of a platform or wall. When this happens the vertical check can then snap the player to the platform's top or bottom. This is expected until `resolveHorizontalCollisions` is written. Phase 1 levels have only a floor and ceiling, so it does not happen now.
-- **The left/right edges are the screen edges** (`keepPlayerInsideScreen`), not real walls. Levels wider than the screen, or a scrolling camera, are not supported.
-- **Unlimited mid-air flips.** This follows the spec's "at any moment" wording. If Phase 2 levels make this too easy, require `player.isGrounded` in `updateGame` before flipping.
-- **No restart or death.** Phase 1 has nothing to die from and no R key yet.
-- **Fast objects could pass through thin solids.** Max vertical speed is 1200 px/s and the time step is capped at 1/30 s, so the player moves at most 40 px per frame. Solids thinner than that (e.g. 10 px platforms) could be skipped at full speed. The floor and ceiling are 40 px thick. Keep Phase 2 platforms at least ~20 px thick, or lower `MAX_FALL_SPEED`.
-- The canvas is fixed at 800×450. It shrinks on small screens but does not scale up.
-- Keyboard only. There are no touch controls.
+## Testing
 
-## Testing done in Phase 1
+A headless Node simulation ran the real scripts with fake key presses. It covered:
 
-- A headless simulation ran the real game scripts with simulated key presses. It checked: the player starts on the floor; left/right movement; no drift when idle; both arrows cancel; Space flips to the ceiling in about 0.47 s; walking on the ceiling; holding Space flips only once; two flips in mid-air; screen-edge clamping; and 200 random flips with large time steps never passing through the floor or ceiling. All passed.
-- Checked in Google Chrome over a local server and opened directly from `file://`: movement, flipping to the ceiling and back, no page scrolling when arrows or Space are pressed, and no JavaScript errors.
+- movement, flipping, and holding Space;
+- screen edges;
+- being blocked by the wall from both sides;
+- going over the wall on the ceiling, and landing on its top;
+- 20,000 random frames without ever overlapping a solid.
+
+All checks passed. The wall changes have not yet been checked by playing in a browser.

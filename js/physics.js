@@ -2,8 +2,9 @@
 // Moves the player and resolves collisions with the level.
 //
 // The player is moved one axis at a time (horizontal, then vertical). Doing
-// the axes separately makes it easy to tell which side of a solid was hit,
-// and it is the usual place to add wall collision later.
+// the axes separately makes it easy to tell which side of a solid was hit:
+// the horizontal pass handles walls and platform sides, the vertical pass
+// handles floors, ceilings, and platform tops and undersides.
 
 /**
  * Returns true if two axis-aligned rectangles overlap.
@@ -34,8 +35,7 @@ function updatePlayerPhysics(player, level, horizontalInput, deltaSeconds) {
   }
   player.x += player.velocityX * deltaSeconds;
   keepPlayerInsideScreen(player);
-  // TODO (Phase 2): call resolveHorizontalCollisions(player, level.solids)
-  // here so walls and the sides of platforms block the player.
+  resolveHorizontalCollisions(player, level.solids);
 
   // --- Vertical movement (gravity) ---
   player.velocityY += GRAVITY_ACCELERATION * player.gravityDirection * deltaSeconds;
@@ -60,8 +60,8 @@ function keepPlayerInsideScreen(player) {
  * Pushes the player out of any solid it moved into vertically, and updates
  * player.isGrounded. Call this right after changing player.y.
  *
- * Phase 1 only needs the floor and ceiling, but this works for any solid
- * rectangle approached from above or below.
+ * Works for any solid approached from above or below: the floor, the
+ * ceiling, and the top of a wall the player lands on after flipping.
  */
 function resolveVerticalCollisions(player, solids) {
   player.isGrounded = false;
@@ -89,6 +89,28 @@ function resolveVerticalCollisions(player, solids) {
   }
 }
 
-// TODO (Phase 2): implement resolveHorizontalCollisions(player, solids).
-// Same idea as resolveVerticalCollisions, but using player.velocityX to decide
-// whether to push the player to the left or right side of the solid.
+/**
+ * Pushes the player out of any solid it walked into from the side. Call this
+ * right after changing player.x.
+ *
+ * A player standing on a surface touches it but does not overlap it (see
+ * rectanglesOverlap), so the floor and ceiling never block walking.
+ */
+function resolveHorizontalCollisions(player, solids) {
+  for (const solid of solids) {
+    if (!rectanglesOverlap(player, solid)) {
+      continue;
+    }
+
+    if (player.velocityX > 0) {
+      // Moving right: stop against the solid's left side.
+      player.x = solid.x - player.width;
+    } else if (player.velocityX < 0) {
+      // Moving left: stop against the solid's right side.
+      player.x = solid.x + solid.width;
+    }
+    player.velocityX = 0;
+  }
+  // TODO (Phase 2+): moving platforms would also need to push the player here,
+  // since then the solid moves into the player rather than the other way round.
+}
