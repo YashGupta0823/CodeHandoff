@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GravitySwitcher</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="game-container">
+    <h1>GravitySwitcher</h1>
+
+    <!-- All game drawing happens on this canvas (see js/renderer.js). -->
+    <canvas id="game-canvas" width="800" height="450"></canvas>
+
+    <p class="controls">
+      <kbd>&larr;</kbd> <kbd>&rarr;</kbd> Move &nbsp;&nbsp;
+      <kbd>Space</kbd> Switch gravity
+      <!-- TODO (Phase 2): add "R: Restart level" once restarting is implemented. -->
+    </p>
+  </main>
+
+  <!--
+    Scripts are plain (non-module) files so the game also works when index.html
+    is opened directly from disk. ORDER MATTERS: each file may use names defined
+    by the files above it, and game.js must be last because it starts the game.
+  -->
+  <script src="js/config.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
